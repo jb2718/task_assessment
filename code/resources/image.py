@@ -10,7 +10,7 @@ class ImageListResource(Resource):
     def post(self):
         data = request.get_json()
         new_image = Image(location=data['location'])
-        image_list.append(new_image)
+        image_list.append(new_image.data)
         return new_image.data, HTTPStatus.CREATED
 
 
