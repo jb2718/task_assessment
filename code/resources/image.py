@@ -1,5 +1,5 @@
 from flask import request
-from flask_restful import Resources
+from flask_restful import Resource
 from http import HTTPStatus
 from models.image import Image, image_list
 
@@ -23,4 +23,5 @@ class ImageResource(Resource):
         return {'message': 'image not found'}, HTTPStatus.NOT_FOUND
 
 class ImageCompareResource(Resource):
-    # pass
+    def get(self):
+        return 'TODO: image compare...'

@@ -8,7 +8,7 @@ def get_next_id():
 
     return last_image.id + 1
 
-class Image
+class Image:
     def __init__(self, location):
         self.id =  get_next_id()
         self.location = location
