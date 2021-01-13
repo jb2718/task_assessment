@@ -1,27 +1,38 @@
-from flask import request
+from flask import request, abort
 from flask_restful import Resource
+from flask_uploads import UploadNotAllowed
+from functools import wraps
 from http import HTTPStatus
-from models.image import Image, image_list
+from libs import image_helper
+from schemas.image import ImageSchema
 
-class ImageListResource(Resource):
-    def get(self):
-        return {'data': image_list}, HTTPStatus.OK
+image_schema = ImageSchema()
 
+def api_key_required(view_function):
+    @wraps(view_function)
+
+    def decorated_function(*args, **kwargs):
+        print(request.headers)
+        if request.headers.get('x-api-key'):
+            return view_function(*args, **kwargs)
+        else:
+            abort(401)
+    return decorated_function
+
+
+class ImagesCompareResource(Resource):
+    @api_key_required
     def post(self):
-        data = request.get_json()
-        new_image = Image(location=data['location'])
-        image_list.append(new_image.data)
-        return new_image.data, HTTPStatus.CREATED
+        json_data = request.get_json()
+        files_data = request.files.to_dict()
 
-
-class ImageResource(Resource):
-    def delete(self, image_id):
-        for image in image_list:
-            if image['id'] == image_id:
-                image_list.remove(image)
-                return {}, HTTPStatus.NO_CONTENT
-        return {'message': 'image not found'}, HTTPStatus.NOT_FOUND
-
-class ImageCompareResource(Resource):
-    def get(self):
-        return 'TODO: image compare...'
+        if not image_helper.valid_number_of_images(files_data, json_data):
+            return {'message': '2 images required'}, 400 
+        
+        try:
+            percentage = image_helper.calculate_similarity(files_data, json_data)
+            return {"data": { "similarity": percentage }}
+        except UploadNotAllowed:
+            return {'message': 'Extension not allowed. Only .jpg, .jpeg, and .png are valid'}, 400
+        return {}, 200
+        
