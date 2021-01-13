@@ -89,7 +89,6 @@ def save_images(file_data, urls_payload, folder: str = None):
     saved_files = {}
 
     if len(file_data) == 2:
-        # files_to_upload = file_data
         saved_files['image1'] = save_image(file_data['image1'], folder=folder)
         saved_files['image2'] = save_image(file_data['image2'], folder=folder)
     elif len(file_data) == 1:
