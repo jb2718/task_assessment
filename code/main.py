@@ -1,17 +1,15 @@
-# import cv2
+import cv2
 import datetime
 import fastapi
 import os
 import requests
 import shutil
 import uvicorn
-
 from fastapi import Security, Depends, HTTPException, File, UploadFile
 from fastapi.security.api_key import APIKeyQuery, APIKeyHeader, APIKey
-# from skimage import metrics
-from PIL import Image, ImageChops
+from skimage import metrics
+from skimage.transform import resize
 from typing import Optional, List
-
 
 API_KEY = "kmrhn74zgzcq4nqb"
 API_KEY_NAME = "app_id"
@@ -20,7 +18,6 @@ IMAGES_DIR = "{}/static".format(PARENT_DIR)
 
 api_key_query = APIKeyQuery(name=API_KEY_NAME, auto_error=False)
 api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
-
 
 
 def get_api_key(
@@ -34,27 +31,20 @@ def get_api_key(
     else:
         raise HTTPException(status_code=403, detail="Invalid credentials")
 
-
 def get_similarity(path_to_img1, path_to_img2) -> str:
-    # file_path1 = get_path(filename=image1, folder=folder)
-    # first_image = cv2.imread(path_to_img1)
-    # first_image = open(path_to_img1, 'r')
-    # second_image = open(path_to_img2, 'r')
-    with open(path_to_img1, "r") as f1:
-        with open(path_to_img1, "r") as f2:
-            percentage = ImageChops.difference(f1, f2)
+    first_image = cv2.imread(path_to_img1)
+    first_image = cv2.cvtColor(first_image, cv2.COLOR_BGR2GRAY)
+    second_image = cv2.imread(path_to_img2)
+    second_image = cv2.cvtColor(second_image, cv2.COLOR_BGR2GRAY)
+    
+    dim1 = max(first_image.shape[0], second_image.shape[0])
+    dim2 = max(first_image.shape[1], second_image.shape[1])
+    
+    first_image_resized = resize(first_image, (dim1, dim2), anti_aliasing=True)
+    second_image_resized = resize(second_image, (dim1, dim2), anti_aliasing=True)
 
-    # second_image.close()
-    # first_image.close()
-    # first_image = cv2.cvtColor(first_image, cv2.COLOR_BGR2GRAY)
-
-    # file_path2 = get_path(filename=image2, folder=folder)
-    # second_image = cv2.imread(path_to_img2)
-    # second_image = cv2.cvtColor(second_image, cv2.COLOR_BGR2GRAY)
-
-    # similarity_index = metrics.structural_similarity(first_image, second_image)
-    # percentage = "{}%".format(similarity_index * 100)
-    # return "100%"
+    similarity_index = metrics.structural_similarity(first_image_resized, second_image_resized)
+    percentage = "{}%".format(similarity_index * 100)
 
     return percentage
 
@@ -79,7 +69,6 @@ def save_image_from_URL(url: str) -> str:
 
     return temp_file_name
 
-
 def save_image_from_local(img_file) -> str:
     extension = img_file.filename.split('.')[1]
     temp_file_name = name_file(extension)
@@ -92,7 +81,6 @@ def save_image_from_local(img_file) -> str:
 
 
 api = fastapi.FastAPI()
-
 
 @api.post('/compare/images')
 def compare_images(
@@ -111,10 +99,7 @@ def compare_images(
     else:
         raise HTTPException(status_code=400, detail="BAD REQUEST: Two images required")
 
-    image_x = Image(path_to_image(saved_file1))
-    image_y = Image(path_to_image(saved_file2))
-    
-    percentage = ImageChops.difference() 
+    percentage = get_similarity(path_to_image(saved_file1), path_to_image(saved_file2))
     os.remove(path_to_image(saved_file1))
     os.remove(path_to_image(saved_file2))
 
